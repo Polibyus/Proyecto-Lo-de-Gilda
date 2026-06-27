@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#3a86c8">
   <title>Lo de Gilda — Almacén</title>
-  <link rel="stylesheet" href="css/styles.css?v=9">
+  <link rel="stylesheet" href="css/styles.css?v=10">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏪</text></svg>">
 </head>
 <body>
@@ -179,15 +179,7 @@
             <option value="kg">Peso (por kg — fiambres, etc.)</option>
           </select>
         </label>
-        <div class="form-row">
-          <label>Costo $
-            <input id="pCost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="opcional">
-          </label>
-          <label>Margen %
-            <input id="pMargin" type="number" min="0" step="1" inputmode="numeric" placeholder="ej: 30">
-          </label>
-        </div>
-        <label><span id="lblPrice">Precio de venta</span> *
+        <label class="big-field"><span id="lblPrice">Precio de venta</span> *
           <input id="pPrice" type="number" min="0" step="0.01" inputmode="decimal" required>
         </label>
         <div class="form-row">
@@ -198,6 +190,18 @@
             <input id="pMin" type="number" min="0" step="1" inputmode="decimal" value="3">
           </label>
         </div>
+        <details class="adv" id="advBox">
+          <summary>⚙️ Costo y ganancia (opcional)</summary>
+          <p class="adv-hint">Cargá el costo y la app calcula tu ganancia. Lo podés dejar para más adelante.</p>
+          <div class="form-row">
+            <label>Costo $
+              <input id="pCost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="opcional">
+            </label>
+            <label>Margen %
+              <input id="pMargin" type="number" min="0" step="1" inputmode="numeric" placeholder="ej: 30">
+            </label>
+          </div>
+        </details>
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" id="modalCancel">Cancelar</button>
           <button type="submit" class="btn btn-primary" id="modalSave">Guardar</button>
@@ -213,9 +217,9 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
   <!-- Base de datos en la nube (Supabase) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=9"></script>
-  <script src="js/db.js?v=9"></script>
-  <script src="js/api.js?v=9"></script>
-  <script src="js/app.js?v=9"></script>
+  <script src="js/config.js?v=10"></script>
+  <script src="js/db.js?v=10"></script>
+  <script src="js/api.js?v=10"></script>
+  <script src="js/app.js?v=10"></script>
 </body>
 </html>

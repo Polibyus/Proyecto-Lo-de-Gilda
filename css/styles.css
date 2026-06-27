@@ -290,6 +290,15 @@ body{
 }
 #productForm input:focus, #productForm select:focus{outline:none; border-color:var(--brand-2)}
 .form-row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+/* precio destacado */
+.big-field span{color:var(--brand); font-size:.95rem}
+.big-field input{border-color:var(--brand-2); font-size:1.2rem; font-weight:700}
+/* sección opcional (costo y ganancia) */
+.adv{margin-bottom:14px; border:1px dashed var(--line); border-radius:10px; padding:0 12px}
+.adv summary{cursor:pointer; padding:11px 0; font-weight:600; color:var(--muted); font-size:.9rem; list-style:none}
+.adv summary::-webkit-details-marker{display:none}
+.adv[open] summary{border-bottom:1px solid var(--line); margin-bottom:10px}
+.adv-hint{font-size:.8rem; color:var(--muted); margin:0 0 10px}
 .modal-actions{display:flex; gap:10px; margin-top:8px}
 .modal-actions .btn{flex:1}
 

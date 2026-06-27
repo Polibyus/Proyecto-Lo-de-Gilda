@@ -333,9 +333,12 @@
     $('#pMin').value   = ctx.minStock != null ? ctx.minStock : 3;
     $('#pUnit').value  = ctx.unit === 'kg' ? 'kg' : 'un';
     updateUnitLabels();
+    $('#advBox').open = ctx.cost != null;   // abre "costo y ganancia" sólo si ya tiene costo
     $('#pCode').readOnly = !!ctx.editing;
     $('#modal').hidden = false;
-    setTimeout(() => $('#pName').focus(), 50);
+    // si el producto ya trae nombre (escaneado), salta directo a poner el precio
+    const yaTieneNombre = !!(ctx.name || '').trim();
+    setTimeout(() => (yaTieneNombre ? $('#pPrice') : $('#pName')).focus(), 50);
   }
 
   // Cambia las etiquetas del formulario según se venda por unidad o por peso
