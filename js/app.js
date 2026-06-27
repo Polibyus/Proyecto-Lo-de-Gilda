@@ -16,6 +16,12 @@
   // ---------- atajos DOM ----------
   const $ = (sel) => document.querySelector(sel);
   const money = (n) => '$' + (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('es-AR');
+  // Cantidad legible: "5 u." o "0,25 kg"
+  const fmtQty = (q, unit) => unit === 'kg'
+    ? (Math.round((Number(q) || 0) * 1000) / 1000).toLocaleString('es-AR', { maximumFractionDigits: 3 }) + ' kg'
+    : (Number(q) || 0) + ' u.';
+  // Etiqueta de precio según unidad
+  const priceLabel = (unit) => unit === 'kg' ? '/kg' : 'c/u';
 
   function toast(msg, type = '') {
     const t = $('#toast');
@@ -131,14 +137,22 @@
   //  CARRITO
   // ============================================================
   function addToCart(p) {
+    const unit = p.unit === 'kg' ? 'kg' : 'un';
     const existing = cart.find(i => i.code === p.code);
     if (existing) {
-      existing.qty += 1;
+      if (unit === 'un') existing.qty += 1; // por peso: se edita el kg a mano, no se suma
+      else toast(`${p.name} ya está — editá los kg`, 'ok');
     } else {
-      cart.push({ code: p.code, name: p.name, qty: 1, unitPrice: p.price, cost: p.cost, stock: p.stock });
+      cart.push({ code: p.code, name: p.name, qty: 1, unitPrice: p.price, cost: p.cost, stock: p.stock, unit });
     }
     renderCart();
-    toast(`Agregado: ${p.name}`, 'ok');
+    if (!existing) toast(`Agregado: ${p.name}`, 'ok');
+    // si es por peso, enfocar el campo de kg para tipear el peso
+    if (unit === 'kg') {
+      const idx = cart.findIndex(i => i.code === p.code);
+      const field = document.querySelector(`.kg-input[data-i="${idx}"]`);
+      if (field) { field.focus(); field.select(); }
+    }
   }
 
   function renderCart() {
@@ -149,20 +163,27 @@
       $('#clearCartBtn').hidden = true;
       return;
     }
-    box.innerHTML = cart.map((it, i) => `
+    box.innerHTML = cart.map((it, i) => {
+      const qtyControl = it.unit === 'kg'
+        ? `<div class="ci-qty kg">
+             <input class="kg-input" type="number" min="0" step="0.05" inputmode="decimal" data-i="${i}" value="${it.qty}"> kg
+           </div>`
+        : `<div class="ci-qty">
+             <button class="qty-btn" data-act="dec" data-i="${i}">−</button>
+             <span class="qty-num">${it.qty}</span>
+             <button class="qty-btn" data-act="inc" data-i="${i}">+</button>
+           </div>`;
+      return `
       <div class="cart-item">
         <div class="ci-info">
           <span class="ci-name">${esc(it.name)}</span>
-          <span class="ci-price">${money(it.unitPrice)} c/u${it.stock <= 0 ? ' · <b class="warn">sin stock</b>' : ''}</span>
+          <span class="ci-price">${money(it.unitPrice)} ${priceLabel(it.unit)}${it.stock <= 0 ? ' · <b class="warn">sin stock</b>' : ''}</span>
         </div>
-        <div class="ci-qty">
-          <button class="qty-btn" data-act="dec" data-i="${i}">−</button>
-          <span class="qty-num">${it.qty}</span>
-          <button class="qty-btn" data-act="inc" data-i="${i}">+</button>
-        </div>
-        <span class="ci-sub">${money(it.unitPrice * it.qty)}</span>
+        ${qtyControl}
+        <span class="ci-sub" data-i="${i}">${money(it.unitPrice * it.qty)}</span>
         <button class="ci-del" data-act="del" data-i="${i}">✕</button>
-      </div>`).join('');
+      </div>`;
+    }).join('');
 
     box.querySelectorAll('button[data-act]').forEach(b =>
       b.addEventListener('click', () => {
@@ -173,10 +194,23 @@
         renderCart();
       }));
 
-    const total = cart.reduce((a, it) => a + it.unitPrice * it.qty, 0);
-    $('#cartTotal').textContent = money(total);
+    // input de kg: actualiza el peso y los totales sin re-renderizar (no pierde el foco)
+    box.querySelectorAll('.kg-input').forEach(inp =>
+      inp.addEventListener('input', () => {
+        const i = +inp.dataset.i;
+        cart[i].qty = Math.max(0, Number(inp.value) || 0);
+        const subEl = box.querySelector(`.ci-sub[data-i="${i}"]`);
+        if (subEl) subEl.textContent = money(cart[i].unitPrice * cart[i].qty);
+        $('#cartTotal').textContent = money(cartTotal());
+      }));
+
+    $('#cartTotal').textContent = money(cartTotal());
     $('#cartFoot').hidden = false;
     $('#clearCartBtn').hidden = false;
+  }
+
+  function cartTotal() {
+    return cart.reduce((a, it) => a + it.unitPrice * it.qty, 0);
   }
 
   $('#clearCartBtn').addEventListener('click', () => {
@@ -208,10 +242,20 @@
     $('#pPrice').value = ctx.price != null ? ctx.price : '';
     $('#pStock').value = ctx.stock != null ? ctx.stock : 0;
     $('#pMin').value   = ctx.minStock != null ? ctx.minStock : 3;
+    $('#pUnit').value  = ctx.unit === 'kg' ? 'kg' : 'un';
+    updateUnitLabels();
     $('#pCode').readOnly = !!ctx.editing;
     $('#modal').hidden = false;
     setTimeout(() => $('#pName').focus(), 50);
   }
+
+  // Cambia las etiquetas del formulario según se venda por unidad o por peso
+  function updateUnitLabels() {
+    const kg = $('#pUnit').value === 'kg';
+    $('#lblPrice').textContent = kg ? 'Precio por kg' : 'Precio de venta';
+    $('#lblStock').textContent = kg ? 'Stock (kg)' : 'Stock';
+  }
+  $('#pUnit').addEventListener('change', updateUnitLabels);
 
   function closeModal() { $('#modal').hidden = true; modalCtx = null; }
   $('#modalCancel').addEventListener('click', closeModal);
@@ -239,6 +283,7 @@
       price: $('#pPrice').value,
       stock: $('#pStock').value,
       minStock: $('#pMin').value,
+      unit: $('#pUnit').value,
       image: modalCtx ? modalCtx.image : '',
     };
     if (!p.name) { toast('Falta el nombre', 'err'); return; }
@@ -314,12 +359,15 @@
     }
     box.innerHTML = list.map(p => {
       const state = p.stock <= 0 ? 'out' : (p.stock <= (p.minStock || 0) ? 'low' : 'ok');
-      const badge = state === 'out' ? 'Sin stock' : (state === 'low' ? `${p.stock} u. ¡poco!` : `${p.stock} u.`);
+      const qty = fmtQty(p.stock, p.unit);
+      const badge = state === 'out' ? 'Sin stock' : (state === 'low' ? `${qty} ¡poco!` : qty);
+      const step = p.unit === 'kg' ? 0.1 : 1;
+      const priceTxt = p.unit === 'kg' ? `${money(p.price)} /kg` : money(p.price);
       return `
-      <div class="stock-card ${state}" data-code="${p.code}">
+      <div class="stock-card ${state}" data-code="${p.code}" data-step="${step}">
         <div class="sc-main">
           <span class="sc-name">${esc(p.name)}</span>
-          <span class="sc-sub">${p.brand ? esc(p.brand) + ' · ' : ''}${money(p.price)}</span>
+          <span class="sc-sub">${p.brand ? esc(p.brand) + ' · ' : ''}${priceTxt}</span>
         </div>
         <div class="sc-stock">
           <button class="qty-btn sm" data-act="minus">−</button>
@@ -331,11 +379,12 @@
 
     box.querySelectorAll('.stock-card').forEach(card => {
       const code = card.dataset.code;
+      const step = Number(card.dataset.step) || 1;
       card.querySelector('[data-act="plus"]').addEventListener('click', async (e) => {
-        e.stopPropagation(); await DB.adjustStock(code, +1); renderStock();
+        e.stopPropagation(); await DB.adjustStock(code, +step); renderStock();
       });
       card.querySelector('[data-act="minus"]').addEventListener('click', async (e) => {
-        e.stopPropagation(); await DB.adjustStock(code, -1); renderStock();
+        e.stopPropagation(); await DB.adjustStock(code, -step); renderStock();
       });
       card.querySelector('.sc-main').addEventListener('click', async () => {
         const prod = await DB.getProduct(code);
@@ -347,34 +396,55 @@
   // ============================================================
   //  DÍA
   // ============================================================
+  function selectedDay() {
+    return $('#dayDate').value || DB.todayKey();
+  }
+
   async function renderDay() {
-    const s = await DB.getDaySummary();
+    const day = selectedDay();
+    const esHoy = day === DB.todayKey();
+    $('#kpiLabel').textContent = esHoy ? 'Vendido hoy' : 'Vendido ese día';
+
+    const s = await DB.getDaySummary(day);
     $('#kpiTotal').textContent = money(s.total);
     $('#kpiCount').textContent = s.count;
     $('#kpiProfit').textContent = money(s.profit);
 
-    const sales = await DB.getSalesByDay();
+    const sales = await DB.getSalesByDay(day);
     const box = $('#dayHistory');
     if (sales.length === 0) {
-      box.innerHTML = '<p class="empty">Todavía no hubo ventas hoy.</p>';
+      box.innerHTML = '<p class="empty">No hubo ventas ese día.</p>';
       return;
     }
     box.innerHTML = sales.map(sale => {
       const hora = new Date(sale.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-      const items = sale.items.map(i => `<li>${i.qty}× ${esc(i.name)} <span>${money(i.unitPrice * i.qty)}</span></li>`).join('');
+      const items = sale.items.map(i =>
+        `<li>${fmtQty(i.qty, i.unit)} · ${esc(i.name)} <span>${money(i.unitPrice * i.qty)}</span></li>`).join('');
       return `
       <div class="sale-card">
         <div class="sale-head">
-          <span class="sale-time">${hora}</span>
-          <strong class="sale-total">${money(sale.total)}</strong>
+          <span class="sale-time">🕐 ${hora}</span>
+          <div class="sale-right">
+            <strong class="sale-total">${money(sale.total)}</strong>
+            <button class="sale-del" data-id="${sale.id}" title="Eliminar venta">🗑</button>
+          </div>
         </div>
         <ul class="sale-items">${items}</ul>
       </div>`;
     }).join('');
+
+    box.querySelectorAll('.sale-del').forEach(b =>
+      b.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar esta venta? El stock de los productos se devuelve.')) return;
+        await DB.deleteSale(b.dataset.id);
+        await renderDay();
+        await refreshDayPill();
+        toast('Venta eliminada', 'ok');
+      }));
   }
 
   async function refreshDayPill() {
-    const s = await DB.getDaySummary();
+    const s = await DB.getDaySummary(); // siempre el total de HOY
     $('#dayPill').textContent = money(s.total);
   }
 
@@ -477,6 +547,26 @@
     });
   }
 
+  // ============================================================
+  //  SELECTOR DE FECHA (vista Día)
+  // ============================================================
+  function setupDayPicker() {
+    $('#dayDate').value = DB.todayKey();
+    $('#dayDate').addEventListener('change', renderDay);
+    $('#dayPrev').addEventListener('click', () => shiftDay(-1));
+    $('#dayNext').addEventListener('click', () => shiftDay(+1));
+  }
+
+  function shiftDay(delta) {
+    const v = $('#dayDate').value || DB.todayKey();
+    const [y, m, d] = v.split('-').map(Number);
+    const dt = new Date(y, m - 1, d + delta);
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    $('#dayDate').value = `${dt.getFullYear()}-${mm}-${dd}`;
+    renderDay();
+  }
+
   // ---------- util ----------
   function esc(s) {
     return String(s == null ? '' : s)
@@ -491,6 +581,7 @@
 
   window.addEventListener('load', () => {
     setupCamera();
+    setupDayPicker();
     refreshDayPill();
     renderCart();
     if ($('#loginGate').hidden) $('#scanInput').focus();

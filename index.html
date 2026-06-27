@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#3a86c8">
   <title>Lo de Gilda — Almacén</title>
-  <link rel="stylesheet" href="css/styles.css?v=3">
+  <link rel="stylesheet" href="css/styles.css?v=5">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏪</text></svg>">
 </head>
 <body>
@@ -73,9 +73,14 @@
 
   <!-- ===================== DÍA ===================== -->
   <main id="view-dia" class="view">
+    <section class="day-picker">
+      <button class="day-nav" id="dayPrev" aria-label="Día anterior">‹</button>
+      <input type="date" id="dayDate" aria-label="Elegir día">
+      <button class="day-nav" id="dayNext" aria-label="Día siguiente">›</button>
+    </section>
     <section class="day-summary">
       <div class="kpi kpi-main">
-        <span class="kpi-label">Vendido hoy</span>
+        <span class="kpi-label" id="kpiLabel">Vendido hoy</span>
         <strong class="kpi-value" id="kpiTotal">$0</strong>
       </div>
       <div class="kpi-row">
@@ -90,7 +95,7 @@
       </div>
     </section>
     <div class="day-history-head">
-      <h2>Movimientos de hoy</h2>
+      <h2>Movimientos</h2>
     </div>
     <div id="dayHistory" class="day-history"></div>
     <button class="btn btn-link" id="logoutBtn">🔒 Salir / bloquear</button>
@@ -127,6 +132,12 @@
         <label>Marca
           <input id="pBrand" type="text" autocomplete="off">
         </label>
+        <label>Se vende por
+          <select id="pUnit">
+            <option value="un">Unidad (por bulto/paquete)</option>
+            <option value="kg">Peso (por kg — fiambres, etc.)</option>
+          </select>
+        </label>
         <div class="form-row">
           <label>Costo $
             <input id="pCost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="opcional">
@@ -135,15 +146,15 @@
             <input id="pMargin" type="number" min="0" step="1" inputmode="numeric" placeholder="ej: 30">
           </label>
         </div>
-        <label>Precio de venta *
+        <label><span id="lblPrice">Precio de venta</span> *
           <input id="pPrice" type="number" min="0" step="0.01" inputmode="decimal" required>
         </label>
         <div class="form-row">
-          <label>Stock
-            <input id="pStock" type="number" min="0" step="1" inputmode="numeric" value="0">
+          <label><span id="lblStock">Stock</span>
+            <input id="pStock" type="number" min="0" step="1" inputmode="decimal" value="0">
           </label>
           <label>Avisar cuando ≤
-            <input id="pMin" type="number" min="0" step="1" inputmode="numeric" value="3">
+            <input id="pMin" type="number" min="0" step="1" inputmode="decimal" value="3">
           </label>
         </div>
         <div class="modal-actions">
@@ -161,9 +172,9 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
   <!-- Base de datos en la nube (Supabase) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=3"></script>
-  <script src="js/db.js?v=3"></script>
-  <script src="js/api.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="js/config.js?v=5"></script>
+  <script src="js/db.js?v=5"></script>
+  <script src="js/api.js?v=5"></script>
+  <script src="js/app.js?v=5"></script>
 </body>
 </html>

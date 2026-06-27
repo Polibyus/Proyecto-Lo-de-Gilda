@@ -41,12 +41,16 @@
 .login-error{color:#c0392b; margin:14px 0 0; font-weight:600}
 #logoutBtn{display:block; margin:22px auto 0; color:var(--muted)}
 html,body{margin:0;padding:0}
+html{overflow-x:hidden}
 body{
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   background:var(--bg); color:var(--ink);
   padding-bottom:78px; /* espacio para tabbar */
   max-width:680px; margin:0 auto;
+  width:100%; overflow-x:hidden; /* nada se desborda a los costados */
 }
+/* las vistas nunca exceden el ancho */
+.view{max-width:100%}
 
 /* ---------- topbar ---------- */
 .topbar{
@@ -118,14 +122,21 @@ body{
 .cart-items{margin-top:10px; display:flex; flex-direction:column; gap:8px}
 .empty{color:var(--muted); text-align:center; padding:24px 8px}
 .cart-item{
-  display:grid; grid-template-columns:1fr auto auto auto; gap:10px; align-items:center;
+  display:grid; grid-template-columns:1fr auto auto auto; gap:8px; align-items:center;
   background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px;
   box-shadow:var(--shadow);
 }
-.ci-name{font-weight:600; display:block}
+.ci-info{min-width:0} /* permite que la columna 1fr se achique */
+.ci-name{font-weight:600; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .ci-price{font-size:.85rem; color:var(--muted)}
 .ci-price .warn{color:var(--warn)}
 .ci-qty{display:flex; align-items:center; gap:8px}
+.ci-qty.kg{font-size:.85rem; color:var(--muted)}
+.kg-input{
+  width:62px; padding:8px 6px; border:1.5px solid var(--brand-2); border-radius:8px;
+  font-size:1rem; text-align:center; font-family:inherit; color:var(--ink);
+}
+.kg-input:focus{outline:none; border-color:var(--brand)}
 .qty-btn{
   width:34px; height:34px; border-radius:8px; border:1px solid var(--line);
   background:#fff; font-size:1.2rem; font-weight:700; color:var(--brand); cursor:pointer; line-height:1;
@@ -174,6 +185,22 @@ body{
 .sc-badge.out{color:var(--warn)}
 
 /* ---------- DÍA ---------- */
+.day-picker{display:flex; align-items:center; gap:8px; margin-bottom:14px}
+.day-picker #dayDate{
+  flex:1; min-width:0; max-width:100%; padding:11px 6px;
+  border:1.5px solid var(--line); border-radius:12px;
+  font-size:1rem; background:#fff; color:var(--ink); font-family:inherit; text-align:center;
+  -webkit-appearance:none; appearance:none;
+}
+.day-picker #dayDate:focus{outline:none; border-color:var(--brand-2)}
+.day-nav{
+  width:42px; height:42px; border:1.5px solid var(--line); background:#fff; color:var(--brand);
+  border-radius:12px; font-size:1.4rem; font-weight:700; cursor:pointer; line-height:1; flex:none;
+}
+.day-nav:active{transform:scale(.96)}
+.sale-right{display:flex; align-items:center; gap:10px}
+.sale-del{background:none; border:none; cursor:pointer; font-size:1.05rem; opacity:.65; padding:2px 4px}
+.sale-del:hover{opacity:1}
 .day-summary{margin-bottom:18px}
 .kpi{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:var(--shadow); text-align:center}
 .kpi-main{background:var(--brand); color:#fff; border:none; margin-bottom:10px}
@@ -215,19 +242,20 @@ body{
 }
 .modal-card{
   background:var(--card); width:100%; max-width:680px;
-  border-radius:18px 18px 0 0; padding:20px 18px calc(20px + env(safe-area-inset-bottom));
-  max-height:92vh; overflow-y:auto; animation:slideup .22s ease;
+  border-radius:18px 18px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+  max-height:90vh; max-height:90dvh; /* dvh = alto real, sin contar la barra del navegador */
+  overflow-y:auto; -webkit-overflow-scrolling:touch; animation:slideup .22s ease;
 }
 @keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
 .modal-card h2{margin:0 0 6px}
 .modal-hint{color:var(--muted); font-size:.9rem; margin:0 0 14px}
 #productForm label{display:block; font-size:.85rem; color:var(--muted); margin-bottom:12px; font-weight:600}
-#productForm input{
+#productForm input, #productForm select{
   display:block; width:100%; margin-top:5px; padding:12px;
   border:1.5px solid var(--line); border-radius:10px; font-size:1rem;
   background:#fff; color:var(--ink); font-family:inherit;
 }
-#productForm input:focus{outline:none; border-color:var(--brand-2)}
+#productForm input:focus, #productForm select:focus{outline:none; border-color:var(--brand-2)}
 .form-row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 .modal-actions{display:flex; gap:10px; margin-top:8px}
 .modal-actions .btn{flex:1}
@@ -247,4 +275,17 @@ body{
   .kpi-row{grid-template-columns:1fr 1fr}
   .modal{align-items:center}
   .modal-card{border-radius:18px; margin:0 16px}
+}
+
+/* ---------- pantallas chicas (≤360px): todo más compacto ---------- */
+@media(max-width:360px){
+  .view{padding:12px}
+  .form-row{grid-template-columns:1fr; gap:0} /* costo/margen y stock/aviso, uno arriba del otro */
+  #productForm label{margin-bottom:10px}
+  .ci-sub{min-width:54px; font-size:.95rem}
+  .qty-btn{width:30px; height:30px}
+  .day-nav{width:38px; height:38px}
+  .topbar{padding:10px 12px}
+  .brand{font-size:1.05rem}
+  #scanInput, #stockSearch{font-size:16px} /* evita el zoom de iOS al enfocar */
 }

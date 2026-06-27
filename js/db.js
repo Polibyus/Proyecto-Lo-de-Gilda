@@ -25,6 +25,8 @@
     return Number.isFinite(n) ? n : null;
   }
 
+  function round3(n) { return Math.round((Number(n) || 0) * 1000) / 1000; }
+
   // ---------- mapeo columnas (snake_case) <-> app (camelCase) ----------
   function fromRow(r) {
     if (!r) return null;
@@ -37,6 +39,7 @@
       price: Number(r.price) || 0,
       stock: Number(r.stock) || 0,
       minStock: Number(r.min_stock) || 0,
+      unit: r.unit === 'kg' ? 'kg' : 'un',
       image: r.image || '',
       updatedAt: r.updated_at,
     };
@@ -49,8 +52,9 @@
       cost: numOrNull(p.cost),
       margin: numOrNull(p.margin),
       price: Number(p.price) || 0,
-      stock: Number.isFinite(+p.stock) ? +p.stock : 0,
-      min_stock: Number.isFinite(+p.minStock) ? +p.minStock : 0,
+      stock: Number.isFinite(+p.stock) ? round3(+p.stock) : 0,
+      min_stock: Number.isFinite(+p.minStock) ? round3(+p.minStock) : 0,
+      unit: p.unit === 'kg' ? 'kg' : 'un',
       image: p.image || null,
       updated_at: new Date().toISOString(),
     };
@@ -86,7 +90,7 @@
   async function adjustStock(code, delta) {
     const current = await getProduct(code);
     if (!current) return null;
-    const stock = Math.max(0, (Number(current.stock) || 0) + delta);
+    const stock = Math.max(0, round3((Number(current.stock) || 0) + delta));
     const { data, error } = await supa.from('productos')
       .update({ stock, updated_at: new Date().toISOString() })
       .eq('code', String(code)).select().single();
@@ -142,6 +146,19 @@
     return { id: data.id, ts: data.ts, dateKey: data.date_key, items: cleanItems, total, profit };
   }
 
+  // Elimina una venta (prueba/equivocada) y DEVUELVE el stock de cada item.
+  async function deleteSale(id) {
+    const { data, error } = await supa.from('ventas').select('*').eq('id', id).maybeSingle();
+    if (error) { console.error('deleteSale/get', error); throw error; }
+    if (!data) return;
+    const { error: delErr } = await supa.from('ventas').delete().eq('id', id);
+    if (delErr) { console.error('deleteSale', delErr); throw delErr; }
+    // devolver stock
+    for (const it of (data.items || [])) {
+      try { await adjustStock(it.code, +(Number(it.qty) || 0)); } catch (e) { console.error('stock++', it.code, e); }
+    }
+  }
+
   async function getSalesByDay(dateKey) {
     const key = dateKey || todayKey();
     const { data, error } = await supa.from('ventas').select('*')
@@ -170,7 +187,7 @@
     todayKey,
     getProducts, getProduct, saveProduct, deleteProduct, adjustStock,
     searchProducts, getLowStock,
-    recordSale, getSalesByDay, getDaySummary,
+    recordSale, deleteSale, getSalesByDay, getDaySummary,
     newInternalCode,
   };
 })();
