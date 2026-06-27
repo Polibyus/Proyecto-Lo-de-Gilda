@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#7c3f1d">
+  <title>Lo de Gilda — Almacén</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏪</text></svg>">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">🏪 <span>Lo de Gilda</span></div>
+    <div class="day-pill" id="dayPill">—</div>
+  </header>
+
+  <!-- ===================== VENDER ===================== -->
+  <main id="view-vender" class="view active">
+    <section class="scan-box">
+      <form id="scanForm" autocomplete="off">
+        <input id="scanInput" type="text" inputmode="text" placeholder="Escaneá o escribí el código / nombre…" aria-label="Código o nombre">
+        <button type="submit" class="btn btn-primary" id="scanBtn">Buscar</button>
+      </form>
+      <div class="scan-actions">
+        <button class="btn btn-ghost" id="cameraBtn" hidden>📷 Escanear con cámara</button>
+      </div>
+      <div id="cameraWrap" class="camera-wrap" hidden>
+        <div id="reader"></div>
+        <button class="btn btn-ghost" id="cameraCloseBtn">Cerrar cámara</button>
+      </div>
+      <div id="searchResults" class="search-results"></div>
+    </section>
+
+    <section class="cart">
+      <div class="cart-head">
+        <h2>Venta actual</h2>
+        <button class="btn btn-link" id="clearCartBtn" hidden>Vaciar</button>
+      </div>
+      <div id="cartItems" class="cart-items">
+        <p class="empty">Todavía no agregaste productos.</p>
+      </div>
+      <div class="cart-foot" id="cartFoot" hidden>
+        <div class="cart-total">
+          <span>Total</span>
+          <strong id="cartTotal">$0</strong>
+        </div>
+        <button class="btn btn-success btn-big" id="checkoutBtn">Cobrar</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== STOCK ===================== -->
+  <main id="view-stock" class="view">
+    <section class="stock-head">
+      <input id="stockSearch" type="text" placeholder="Buscar producto…" aria-label="Buscar en stock">
+      <button class="btn btn-primary" id="newProductBtn">+ Nuevo</button>
+    </section>
+    <div id="stockAlerts" class="alerts"></div>
+    <div id="stockList" class="stock-list"></div>
+  </main>
+
+  <!-- ===================== DÍA ===================== -->
+  <main id="view-dia" class="view">
+    <section class="day-summary">
+      <div class="kpi kpi-main">
+        <span class="kpi-label">Vendido hoy</span>
+        <strong class="kpi-value" id="kpiTotal">$0</strong>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi">
+          <span class="kpi-label">Ventas</span>
+          <strong class="kpi-value" id="kpiCount">0</strong>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Ganancia</span>
+          <strong class="kpi-value" id="kpiProfit">$0</strong>
+        </div>
+      </div>
+    </section>
+    <div class="day-history-head">
+      <h2>Movimientos de hoy</h2>
+    </div>
+    <div id="dayHistory" class="day-history"></div>
+  </main>
+
+  <!-- ===================== NAV ===================== -->
+  <nav class="tabbar">
+    <button class="tab active" data-view="vender">🛒<span>Vender</span></button>
+    <button class="tab" data-view="stock">📦<span>Stock</span></button>
+    <button class="tab" data-view="dia">📊<span>Día</span></button>
+  </nav>
+
+  <!-- ===================== MODAL PRODUCTO ===================== -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal-card">
+      <h2 id="modalTitle">Nuevo producto</h2>
+      <p id="modalHint" class="modal-hint"></p>
+      <form id="productForm">
+        <label>Código de barras
+          <input id="pCode" type="text" autocomplete="off">
+        </label>
+        <label>Nombre *
+          <input id="pName" type="text" required autocomplete="off">
+        </label>
+        <label>Marca
+          <input id="pBrand" type="text" autocomplete="off">
+        </label>
+        <div class="form-row">
+          <label>Costo $
+            <input id="pCost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="opcional">
+          </label>
+          <label>Margen %
+            <input id="pMargin" type="number" min="0" step="1" inputmode="numeric" placeholder="ej: 30">
+          </label>
+        </div>
+        <label>Precio de venta *
+          <input id="pPrice" type="number" min="0" step="0.01" inputmode="decimal" required>
+        </label>
+        <div class="form-row">
+          <label>Stock
+            <input id="pStock" type="number" min="0" step="1" inputmode="numeric" value="0">
+          </label>
+          <label>Avisar cuando ≤
+            <input id="pMin" type="number" min="0" step="1" inputmode="numeric" value="3">
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="modalCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="modalSave">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- Cámara (se carga sólo si hay internet; en PC no hace falta) -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+  <script src="js/db.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

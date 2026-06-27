@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lo-de-gilda",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/server.js"],
+      "port": 8090
+    }
+  ]
+}
