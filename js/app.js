@@ -399,14 +399,32 @@
     });
   }
 
+  // Formatos de código de barras de almacén (mejora la lectura, sobre todo en iPhone)
+  function barcodeFormats() {
+    const F = window.Html5QrcodeSupportedFormats;
+    if (!F) return undefined;
+    return [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.CODE_39, F.ITF];
+  }
+
+  // Caja de escaneo ancha (los códigos de barras son anchos y bajos)
+  function scanBox(viewW, viewH) {
+    const w = Math.floor(Math.min(viewW * 0.92, 340));
+    const h = Math.floor(Math.min(viewH * 0.5, 180));
+    return { width: w, height: h };
+  }
+
   async function startCamera(title, onDecode) {
     $('#cameraTitle').textContent = title;
     $('#cameraOverlay').hidden = false;
     try {
-      cameraScanner = new Html5Qrcode('reader');
+      cameraScanner = new Html5Qrcode('reader', {
+        formatsToSupport: barcodeFormats(),
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+        verbose: false,
+      });
       await cameraScanner.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 150 } },
+        { fps: 10, qrbox: scanBox, aspectRatio: 1.0 },
         async (decodedText) => {
           await stopCamera();
           await onDecode(decodedText.trim());
@@ -414,7 +432,9 @@
         () => {}
       );
     } catch (err) {
-      toast('No se pudo abrir la cámara', 'err');
+      const msg = (err && (err.message || err.name)) ? (err.message || err.name) : 'error desconocido';
+      toast('No se pudo abrir la cámara: ' + msg, 'err');
+      console.error('Cámara:', err);
       await stopCamera();
     }
   }
