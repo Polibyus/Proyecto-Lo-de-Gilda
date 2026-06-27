@@ -18,6 +18,28 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none !important}
+
+/* ---------- portón de entrada ---------- */
+.login-gate{
+  position:fixed; inset:0; z-index:100;
+  background:linear-gradient(160deg,#5fa3da,#2f6ea8);
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+.login-card{
+  background:#fff; border-radius:18px; padding:34px 26px; width:100%; max-width:360px;
+  text-align:center; box-shadow:0 12px 40px rgba(0,0,0,.22);
+}
+.login-logo{font-size:3rem; line-height:1}
+.login-card h1{margin:8px 0 2px; color:#2f6ea8; font-size:1.5rem}
+.login-card > p{color:#6b7c8c; margin:0 0 20px}
+.login-card input{
+  width:100%; padding:14px; border:1.5px solid #d8e4ee; border-radius:12px;
+  font-size:1.05rem; margin-bottom:12px; text-align:center; font-family:inherit;
+}
+.login-card input:focus{outline:none; border-color:#3a86c8}
+.login-card .btn{width:100%}
+.login-error{color:#c0392b; margin:14px 0 0; font-weight:600}
+#logoutBtn{display:block; margin:22px auto 0; color:var(--muted)}
 html,body{margin:0;padding:0}
 body{
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -146,7 +168,7 @@ body{
 .sc-name{font-weight:600; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .sc-sub{font-size:.85rem; color:var(--muted)}
 .sc-stock{display:flex; align-items:center; gap:8px}
-.sc-badge{font-weight:700; font-size:.85rem; min-width:64px; text-align:center}
+.sc-badge{font-weight:700; font-size:.85rem; min-width:78px; text-align:center; white-space:nowrap}
 .sc-badge.ok{color:var(--accent-d)}
 .sc-badge.low{color:var(--low)}
 .sc-badge.out{color:var(--warn)}

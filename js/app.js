@@ -9,6 +9,10 @@
   let modalCtx = null;      // contexto del modal (alta/edición)
   let cameraScanner = null;
 
+  // ---------- portón de entrada (traba suave, no es seguridad real) ----------
+  const APP_PASSWORD = 'lodegilda';
+  const AUTH_KEY = 'ldg_auth';
+
   // ---------- atajos DOM ----------
   const $ = (sel) => document.querySelector(sel);
   const money = (n) => '$' + (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('es-AR');
@@ -310,7 +314,7 @@
     }
     box.innerHTML = list.map(p => {
       const state = p.stock <= 0 ? 'out' : (p.stock <= (p.minStock || 0) ? 'low' : 'ok');
-      const badge = state === 'out' ? 'Sin stock' : (state === 'low' ? 'Queda poco' : `${p.stock} u.`);
+      const badge = state === 'out' ? 'Sin stock' : (state === 'low' ? `${p.stock} u. ¡poco!` : `${p.stock} u.`);
       return `
       <div class="stock-card ${state}" data-code="${p.code}">
         <div class="sc-main">
@@ -423,6 +427,36 @@
     $('#cameraOverlay').hidden = true;
   }
 
+  // ============================================================
+  //  PORTÓN DE ENTRADA
+  // ============================================================
+  function setupAuth() {
+    const gate = $('#loginGate');
+    if (localStorage.getItem(AUTH_KEY) === '1') { gate.hidden = true; }
+
+    $('#loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = $('#loginPass').value.trim().toLowerCase();
+      if (val === APP_PASSWORD) {
+        localStorage.setItem(AUTH_KEY, '1');
+        gate.hidden = true;
+        $('#loginError').hidden = true;
+        $('#scanInput').focus();
+      } else {
+        $('#loginError').hidden = false;
+        $('#loginPass').value = '';
+        $('#loginPass').focus();
+      }
+    });
+
+    $('#logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem(AUTH_KEY);
+      gate.hidden = false;
+      $('#loginPass').value = '';
+      $('#loginPass').focus();
+    });
+  }
+
   // ---------- util ----------
   function esc(s) {
     return String(s == null ? '' : s)
@@ -432,11 +466,14 @@
   // ============================================================
   //  INIT
   // ============================================================
+  // El portón se resuelve de inmediato (sin esperar imágenes/CDN) para evitar parpadeo.
+  setupAuth();
+
   window.addEventListener('load', () => {
     setupCamera();
     refreshDayPill();
     renderCart();
-    $('#scanInput').focus();
+    if ($('#loginGate').hidden) $('#scanInput').focus();
   });
 
 })();
