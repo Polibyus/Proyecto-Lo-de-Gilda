@@ -117,7 +117,8 @@
   // ============================================================
   //  VENTAS
   // ============================================================
-  async function recordSale(items) {
+  async function recordSale(items, payment) {
+    const pay = payment === 'efectivo' ? 'efectivo' : 'transferencia';
     let total = 0, profit = 0;
     const cleanItems = items.map(it => {
       const sub = (Number(it.unitPrice) || 0) * (Number(it.qty) || 0);
@@ -134,7 +135,7 @@
     });
 
     const { data, error } = await supa.from('ventas')
-      .insert({ date_key: todayKey(), items: cleanItems, total, profit })
+      .insert({ date_key: todayKey(), items: cleanItems, total, profit, payment: pay })
       .select().single();
     if (error) { console.error('recordSale', error); throw error; }
 
@@ -143,7 +144,7 @@
       try { await adjustStock(it.code, -it.qty); } catch (e) { console.error('stock--', it.code, e); }
     }
 
-    return { id: data.id, ts: data.ts, dateKey: data.date_key, items: cleanItems, total, profit };
+    return { id: data.id, ts: data.ts, dateKey: data.date_key, items: cleanItems, total, profit, payment: pay };
   }
 
   // Elimina una venta (prueba/equivocada) y DEVUELVE el stock de cada item.
@@ -167,6 +168,7 @@
     return data.map(s => ({
       id: s.id, ts: s.ts, dateKey: s.date_key,
       items: s.items || [], total: Number(s.total) || 0, profit: Number(s.profit) || 0,
+      payment: s.payment === 'efectivo' ? 'efectivo' : 'transferencia',
     }));
   }
 
@@ -175,7 +177,9 @@
     const total = sales.reduce((a, s) => a + s.total, 0);
     const profit = sales.reduce((a, s) => a + s.profit, 0);
     const units = sales.reduce((a, s) => a + s.items.reduce((x, i) => x + (i.qty || 0), 0), 0);
-    return { total, profit, count: sales.length, units };
+    const byPayment = { transferencia: 0, efectivo: 0 };
+    sales.forEach(s => { byPayment[s.payment] += s.total; });
+    return { total, profit, count: sales.length, units, byPayment };
   }
 
   // ---------- util ----------

@@ -88,9 +88,10 @@ body{
 
 /* ---------- VENDER: scan ---------- */
 .scan-box{margin-bottom:18px}
+.search-wrap{position:relative} /* ancla del dropdown de sugerencias */
 #scanForm{display:flex; gap:8px}
 #scanInput{
-  flex:1; padding:14px; font-size:1.05rem; border:1.5px solid var(--line);
+  flex:1; min-width:0; padding:14px; font-size:1.05rem; border:1.5px solid var(--line);
   border-radius:12px; background:#fff; color:var(--ink);
 }
 #scanInput:focus{outline:none; border-color:var(--brand-2)}
@@ -105,12 +106,20 @@ body{
 #reader{border-radius:12px; overflow:hidden; background:#000}
 .camera-panel .btn{width:100%; margin-top:14px}
 
-.search-results{margin-top:12px; display:flex; flex-direction:column; gap:8px}
+/* dropdown de sugerencias, pegado debajo de la barra como un buscador normal */
+.search-results{
+  position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:30;
+  display:flex; flex-direction:column; gap:4px;
+  background:#fff; border:1px solid var(--line); border-radius:12px; padding:6px;
+  box-shadow:0 10px 26px rgba(30,60,90,.18); max-height:55vh; overflow-y:auto;
+}
+.search-results:empty{display:none}
 .result-row{
   display:flex; justify-content:space-between; align-items:center; gap:10px;
-  background:#fff; border:1px solid var(--line); border-radius:10px;
-  padding:12px 14px; text-align:left; cursor:pointer; font-family:inherit;
+  background:#fff; border:1px solid transparent; border-radius:8px;
+  padding:11px 12px; text-align:left; cursor:pointer; font-family:inherit;
 }
+.result-row:not(:last-child){border-bottom:1px solid var(--line); border-radius:0}
 .result-row:hover{border-color:var(--brand-2)}
 .result-name{font-weight:600}
 .result-name em{font-weight:400; color:var(--muted); font-style:normal}
@@ -147,13 +156,28 @@ body{
 .ci-del{background:none; border:none; color:var(--muted); font-size:1.1rem; cursor:pointer}
 
 .cart-foot{
-  position:sticky; bottom:78px; margin-top:14px;
+  margin-top:14px;
   background:var(--card); border:1px solid var(--line); border-radius:14px;
   padding:14px; box-shadow:var(--shadow);
 }
 .cart-total{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px}
 .cart-total span{color:var(--muted)}
 .cart-total strong{font-size:1.6rem; color:var(--brand)}
+
+/* medio de pago */
+.pay-toggle{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px}
+.pay-opt{
+  padding:11px 8px; border-radius:10px; border:1.5px solid var(--line);
+  background:#fff; font-weight:700; font-size:.92rem; cursor:pointer; font-family:inherit;
+}
+.pay-opt[data-pay="transferencia"]{color:var(--brand)}
+.pay-opt[data-pay="efectivo"]{color:var(--accent)}
+.pay-opt.active[data-pay="transferencia"]{background:var(--brand); border-color:var(--brand); color:#fff}
+.pay-opt.active[data-pay="efectivo"]{background:var(--accent); border-color:var(--accent); color:#fff}
+/* botón Cobrar según medio de pago */
+.checkout-transferencia{background:var(--brand); color:#fff}
+.checkout-efectivo{background:var(--accent); color:#fff}
+.checkout-transferencia:hover, .checkout-efectivo:hover{filter:brightness(1.07)}
 
 /* ---------- STOCK ---------- */
 .stock-head{display:flex; gap:8px; margin-bottom:12px}
@@ -208,7 +232,16 @@ body{
 .kpi-label{display:block; font-size:.85rem; color:var(--muted); margin-bottom:4px}
 .kpi-value{font-size:1.5rem}
 .kpi-main .kpi-value{font-size:2.2rem}
-.kpi-row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.kpi-row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px}
+/* cajas separadas por medio de pago */
+.caja-transferencia{border-left:5px solid var(--brand)}
+.caja-efectivo{border-left:5px solid var(--accent)}
+.caja-transferencia .kpi-value{color:var(--brand); font-size:1.25rem}
+.caja-efectivo .kpi-value{color:var(--accent-d); font-size:1.25rem}
+/* etiqueta de pago en cada venta */
+.pay-badge{font-size:.72rem; font-weight:700; padding:2px 7px; border-radius:999px; margin-left:6px; white-space:nowrap}
+.pay-badge.transferencia{background:#e2eefb; color:var(--brand)}
+.pay-badge.efectivo{background:#e2f3e9; color:var(--accent-d)}
 .day-history-head h2{font-size:1.1rem; margin:6px 0 10px}
 .day-history{display:flex; flex-direction:column; gap:8px}
 .sale-card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow)}
@@ -259,6 +292,32 @@ body{
 .form-row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 .modal-actions{display:flex; gap:10px; margin-top:8px}
 .modal-actions .btn{flex:1}
+
+/* ---------- modal de cantidad ---------- */
+.qty-card h2{margin:0 0 2px}
+.qty-ctrl{display:flex; align-items:center; justify-content:center; gap:10px; margin:18px 0}
+.qty-big{
+  width:56px; height:56px; border-radius:14px; border:1.5px solid var(--line);
+  background:#fff; color:var(--brand); font-size:1.8rem; font-weight:700; cursor:pointer; line-height:1; flex:none;
+}
+.qty-big:active{transform:scale(.95)}
+#qtyInput{
+  width:110px; padding:12px; border:1.5px solid var(--brand-2); border-radius:12px;
+  font-size:1.5rem; font-weight:700; text-align:center; font-family:inherit; color:var(--ink);
+}
+#qtyInput:focus{outline:none; border-color:var(--brand)}
+.qty-unit{font-size:1.1rem; font-weight:700; color:var(--muted); min-width:18px}
+.qty-chips{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px}
+.qty-chips button{
+  padding:10px 4px; border:1.5px solid var(--line); border-radius:10px; background:#fff;
+  color:var(--brand); font-weight:700; font-size:.9rem; cursor:pointer; font-family:inherit;
+}
+.qty-chips button:active{background:var(--brand); color:#fff}
+.qty-subtotal{
+  display:flex; justify-content:space-between; align-items:baseline;
+  background:#eef4f9; border-radius:12px; padding:12px 14px; margin-bottom:16px;
+}
+.qty-subtotal strong{font-size:1.5rem; color:var(--brand)}
 
 /* ---------- TOAST ---------- */
 .toast{

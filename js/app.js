@@ -8,6 +8,7 @@
   let cart = [];            // [{code,name,qty,unitPrice,cost,stock}]
   let modalCtx = null;      // contexto del modal (alta/edición)
   let cameraScanner = null;
+  let payMethod = 'transferencia';   // medio de pago seleccionado (default)
 
   // ---------- portón de entrada (traba suave, no es seguridad real) ----------
   const APP_PASSWORD = 'lodegilda';
@@ -16,10 +17,12 @@
   // ---------- atajos DOM ----------
   const $ = (sel) => document.querySelector(sel);
   const money = (n) => '$' + (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('es-AR');
-  // Cantidad legible: "5 u." o "0,25 kg"
-  const fmtQty = (q, unit) => unit === 'kg'
-    ? (Math.round((Number(q) || 0) * 1000) / 1000).toLocaleString('es-AR', { maximumFractionDigits: 3 }) + ' kg'
-    : (Number(q) || 0) + ' u.';
+  // Cantidad legible: "5 u.", "250 g" (si <1kg) o "1,5 kg"
+  const fmtQty = (q, unit) => {
+    if (unit !== 'kg') return (Number(q) || 0) + ' u.';
+    const g = Math.round((Number(q) || 0) * 1000);
+    return g < 1000 ? g + ' g' : (g / 1000).toLocaleString('es-AR', { maximumFractionDigits: 3 }) + ' kg';
+  };
   // Etiqueta de precio según unidad
   const priceLabel = (unit) => unit === 'kg' ? '/kg' : 'c/u';
 
@@ -77,8 +80,7 @@
     // 1) ¿existe ya un producto con ese código?
     let prod = await DB.getProduct(value);
     if (prod) {
-      addToCart(prod);
-      resetScanInput();
+      pickForSale(prod);
       return;
     }
     // 2) Si parece código de barras -> buscar online y ofrecer alta
@@ -90,7 +92,7 @@
         name: found ? found.name : '',
         brand: found ? found.brand : '',
         image: found ? found.image : '',
-        afterSave: (p) => { addToCart(p); },
+        afterSave: (p) => { pickForSale(p); },
         hint: found
           ? `Encontrado en ${found.source}. Poné el precio y guardá.`
           : 'No apareció en la base online. Cargalo a mano.',
@@ -105,7 +107,7 @@
       openProductModal({
         code: DB.newInternalCode(),
         name: value,
-        afterSave: (p) => { addToCart(p); },
+        afterSave: (p) => { pickForSale(p); },
         hint: 'Producto sin código de barras. Cargalo a mano.',
       });
       resetScanInput();
@@ -129,30 +131,33 @@
     box.querySelectorAll('.result-row').forEach(b =>
       b.addEventListener('click', async () => {
         const p = await DB.getProduct(b.dataset.code);
-        if (p) { addToCart(p); $('#searchResults').innerHTML = ''; resetScanInput(); }
+        if (p) pickForSale(p);
       }));
+  }
+
+  // Cierra el buscador y abre el paso de "cantidad" antes de sumar al total
+  function pickForSale(prod) {
+    $('#searchResults').innerHTML = '';
+    $('#scanInput').value = '';
+    openQtyModal(prod);
   }
 
   // ============================================================
   //  CARRITO
   // ============================================================
-  function addToCart(p) {
+  // Agrega al carrito la cantidad indicada (qty en kg si es por peso, en unidades si no).
+  function addToCart(p, qty) {
     const unit = p.unit === 'kg' ? 'kg' : 'un';
+    const add = Math.max(0, Number(qty) || 0);
+    if (add <= 0) return;
     const existing = cart.find(i => i.code === p.code);
     if (existing) {
-      if (unit === 'un') existing.qty += 1; // por peso: se edita el kg a mano, no se suma
-      else toast(`${p.name} ya está — editá los kg`, 'ok');
+      existing.qty = Math.round((existing.qty + add) * 1000) / 1000;
     } else {
-      cart.push({ code: p.code, name: p.name, qty: 1, unitPrice: p.price, cost: p.cost, stock: p.stock, unit });
+      cart.push({ code: p.code, name: p.name, qty: add, unitPrice: p.price, cost: p.cost, stock: p.stock, unit });
     }
     renderCart();
-    if (!existing) toast(`Agregado: ${p.name}`, 'ok');
-    // si es por peso, enfocar el campo de kg para tipear el peso
-    if (unit === 'kg') {
-      const idx = cart.findIndex(i => i.code === p.code);
-      const field = document.querySelector(`.kg-input[data-i="${idx}"]`);
-      if (field) { field.focus(); field.select(); }
-    }
+    toast(`Agregado: ${fmtQty(add, unit)} de ${p.name}`, 'ok');
   }
 
   function renderCart() {
@@ -166,7 +171,7 @@
     box.innerHTML = cart.map((it, i) => {
       const qtyControl = it.unit === 'kg'
         ? `<div class="ci-qty kg">
-             <input class="kg-input" type="number" min="0" step="0.05" inputmode="decimal" data-i="${i}" value="${it.qty}"> kg
+             <input class="kg-input" type="number" min="0" step="10" inputmode="numeric" data-i="${i}" value="${Math.round(it.qty * 1000)}"> g
            </div>`
         : `<div class="ci-qty">
              <button class="qty-btn" data-act="dec" data-i="${i}">−</button>
@@ -194,15 +199,20 @@
         renderCart();
       }));
 
-    // input de kg: actualiza el peso y los totales sin re-renderizar (no pierde el foco)
-    box.querySelectorAll('.kg-input').forEach(inp =>
+    // input de gramos: convierte a kg y actualiza totales sin re-renderizar (no pierde el foco)
+    box.querySelectorAll('.kg-input').forEach(inp => {
       inp.addEventListener('input', () => {
         const i = +inp.dataset.i;
-        cart[i].qty = Math.max(0, Number(inp.value) || 0);
+        const gramos = Math.max(0, Number(inp.value) || 0);
+        cart[i].qty = gramos / 1000; // qty siempre en kg internamente
         const subEl = box.querySelector(`.ci-sub[data-i="${i}"]`);
         if (subEl) subEl.textContent = money(cart[i].unitPrice * cart[i].qty);
         $('#cartTotal').textContent = money(cartTotal());
-      }));
+      });
+      // al abrir el teclado, dejar el item visible (no tapado)
+      inp.addEventListener('focus', () =>
+        setTimeout(() => inp.closest('.cart-item').scrollIntoView({ block: 'center', behavior: 'smooth' }), 250));
+    });
 
     $('#cartTotal').textContent = money(cartTotal());
     $('#cartFoot').hidden = false;
@@ -217,13 +227,92 @@
     if (confirm('¿Vaciar la venta actual?')) { cart = []; renderCart(); }
   });
 
+  // ============================================================
+  //  PASO DE CANTIDAD (se elige cuánto antes de sumar al total)
+  // ============================================================
+  let qtyProduct = null;
+
+  function openQtyModal(p) {
+    qtyProduct = p;
+    const kg = p.unit === 'kg';
+    $('#qtyName').textContent = p.name;
+    $('#qtyPrice').textContent = kg ? `${money(p.price)} por kg` : `${money(p.price)} por unidad`;
+    $('#qtyUnitLabel').textContent = kg ? 'g' : 'u.';
+    $('#qtyChips').hidden = !kg;
+    const inp = $('#qtyInput');
+    inp.value = kg ? 100 : 1;
+    inp.step = kg ? 50 : 1;
+    updateQtySubtotal();
+    $('#qtyModal').hidden = false;
+    setTimeout(() => { inp.focus(); inp.select(); }, 50);
+  }
+
+  function closeQtyModal() { $('#qtyModal').hidden = true; qtyProduct = null; }
+
+  // Devuelve la cantidad en la unidad interna: kg si es por peso, unidades si no.
+  function qtyValueInternal() {
+    const v = Math.max(0, Number($('#qtyInput').value) || 0);
+    return (qtyProduct && qtyProduct.unit === 'kg') ? v / 1000 : v;
+  }
+
+  function updateQtySubtotal() {
+    if (!qtyProduct) return;
+    $('#qtySubtotal').textContent = money(qtyProduct.price * qtyValueInternal());
+  }
+
+  function stepQty(dir) {
+    const inp = $('#qtyInput');
+    const step = Number(inp.step) || 1;
+    inp.value = Math.max(0, Math.round(((Number(inp.value) || 0) + dir * step) * 1000) / 1000);
+    updateQtySubtotal();
+  }
+
+  $('#qtyInput').addEventListener('input', updateQtySubtotal);
+  $('#qtyMinus').addEventListener('click', () => stepQty(-1));
+  $('#qtyPlus').addEventListener('click', () => stepQty(1));
+  $('#qtyChips').querySelectorAll('button').forEach(b =>
+    b.addEventListener('click', () => { $('#qtyInput').value = b.dataset.g; updateQtySubtotal(); }));
+  $('#qtyCancel').addEventListener('click', closeQtyModal);
+  $('#qtyModal').addEventListener('click', (e) => { if (e.target.id === 'qtyModal') closeQtyModal(); });
+  $('#qtyInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#qtyAdd').click(); } });
+  $('#qtyAdd').addEventListener('click', () => {
+    if (!qtyProduct) return;
+    const qty = qtyValueInternal();
+    if (qty <= 0) { toast('Poné una cantidad', 'err'); return; }
+    const p = qtyProduct;
+    closeQtyModal();
+    addToCart(p, qty);
+    $('#scanInput').focus();
+  });
+
+  // Medio de pago (transferencia / efectivo)
+  function setPayMethod(m) {
+    payMethod = m === 'efectivo' ? 'efectivo' : 'transferencia';
+    document.querySelectorAll('.pay-opt').forEach(b =>
+      b.classList.toggle('active', b.dataset.pay === payMethod));
+    const btn = $('#checkoutBtn');
+    btn.classList.toggle('checkout-efectivo', payMethod === 'efectivo');
+    btn.classList.toggle('checkout-transferencia', payMethod === 'transferencia');
+    btn.textContent = payMethod === 'efectivo' ? 'Cobrar · Efectivo' : 'Cobrar · Transferencia';
+  }
+  document.querySelectorAll('.pay-opt').forEach(b =>
+    b.addEventListener('click', () => setPayMethod(b.dataset.pay)));
+
   $('#checkoutBtn').addEventListener('click', async () => {
     if (cart.length === 0) return;
-    const sale = await DB.recordSale(cart);
+    let sale;
+    try {
+      sale = await DB.recordSale(cart, payMethod);
+    } catch (e) {
+      toast('No se pudo cobrar (revisá la conexión)', 'err');
+      return;
+    }
     cart = [];
     renderCart();
+    setPayMethod('transferencia'); // vuelve al default para la próxima venta
     await refreshDayPill();
-    toast(`Venta cobrada: ${money(sale.total)}`, 'ok');
+    const etiqueta = sale.payment === 'efectivo' ? 'Efectivo' : 'Transferencia';
+    toast(`Cobrado ${money(sale.total)} · ${etiqueta}`, 'ok');
   });
 
   // ============================================================
@@ -409,6 +498,8 @@
     $('#kpiTotal').textContent = money(s.total);
     $('#kpiCount').textContent = s.count;
     $('#kpiProfit').textContent = money(s.profit);
+    $('#kpiTransfer').textContent = money(s.byPayment.transferencia);
+    $('#kpiCash').textContent = money(s.byPayment.efectivo);
 
     const sales = await DB.getSalesByDay(day);
     const box = $('#dayHistory');
@@ -420,10 +511,13 @@
       const hora = new Date(sale.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
       const items = sale.items.map(i =>
         `<li>${fmtQty(i.qty, i.unit)} · ${esc(i.name)} <span>${money(i.unitPrice * i.qty)}</span></li>`).join('');
+      const pago = sale.payment === 'efectivo'
+        ? '<span class="pay-badge efectivo">💵 Efectivo</span>'
+        : '<span class="pay-badge transferencia">🏦 Transferencia</span>';
       return `
       <div class="sale-card">
         <div class="sale-head">
-          <span class="sale-time">🕐 ${hora}</span>
+          <span class="sale-time">🕐 ${hora} ${pago}</span>
           <div class="sale-right">
             <strong class="sale-total">${money(sale.total)}</strong>
             <button class="sale-del" data-id="${sale.id}" title="Eliminar venta">🗑</button>

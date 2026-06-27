@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#3a86c8">
   <title>Lo de Gilda — Almacén</title>
-  <link rel="stylesheet" href="css/styles.css?v=5">
+  <link rel="stylesheet" href="css/styles.css?v=9">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏪</text></svg>">
 </head>
 <body>
@@ -32,14 +32,16 @@
   <!-- ===================== VENDER ===================== -->
   <main id="view-vender" class="view active">
     <section class="scan-box">
-      <form id="scanForm" autocomplete="off">
-        <input id="scanInput" type="text" inputmode="text" placeholder="Escaneá o escribí el código / nombre…" aria-label="Código o nombre">
-        <button type="submit" class="btn btn-primary" id="scanBtn">Buscar</button>
-      </form>
+      <div class="search-wrap">
+        <form id="scanForm" autocomplete="off">
+          <input id="scanInput" type="text" inputmode="text" placeholder="Escaneá o escribí el código / nombre…" aria-label="Código o nombre">
+          <button type="submit" class="btn btn-primary" id="scanBtn">Buscar</button>
+        </form>
+        <div id="searchResults" class="search-results"></div>
+      </div>
       <div class="scan-actions">
         <button class="btn btn-ghost" id="cameraBtn" hidden>📷 Escanear con cámara</button>
       </div>
-      <div id="searchResults" class="search-results"></div>
     </section>
 
     <section class="cart">
@@ -55,7 +57,11 @@
           <span>Total</span>
           <strong id="cartTotal">$0</strong>
         </div>
-        <button class="btn btn-success btn-big" id="checkoutBtn">Cobrar</button>
+        <div class="pay-toggle" id="payToggle">
+          <button type="button" class="pay-opt active" data-pay="transferencia">🏦 Transferencia</button>
+          <button type="button" class="pay-opt" data-pay="efectivo">💵 Efectivo</button>
+        </div>
+        <button class="btn btn-big checkout-transferencia" id="checkoutBtn">Cobrar · Transferencia</button>
       </div>
     </section>
   </main>
@@ -82,6 +88,16 @@
       <div class="kpi kpi-main">
         <span class="kpi-label" id="kpiLabel">Vendido hoy</span>
         <strong class="kpi-value" id="kpiTotal">$0</strong>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi caja-transferencia">
+          <span class="kpi-label">🏦 Transferencia</span>
+          <strong class="kpi-value" id="kpiTransfer">$0</strong>
+        </div>
+        <div class="kpi caja-efectivo">
+          <span class="kpi-label">💵 Efectivo</span>
+          <strong class="kpi-value" id="kpiCash">$0</strong>
+        </div>
       </div>
       <div class="kpi-row">
         <div class="kpi">
@@ -114,6 +130,31 @@
       <p class="camera-title" id="cameraTitle">Apuntá al código de barras</p>
       <div id="reader"></div>
       <button class="btn btn-ghost" id="cameraCloseBtn">Cerrar cámara</button>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL CANTIDAD ===================== -->
+  <div id="qtyModal" class="modal" hidden>
+    <div class="modal-card qty-card">
+      <h2 id="qtyName">Producto</h2>
+      <p id="qtyPrice" class="modal-hint"></p>
+      <div class="qty-ctrl">
+        <button type="button" class="qty-big" id="qtyMinus">−</button>
+        <input id="qtyInput" type="number" min="0" inputmode="numeric" value="1">
+        <span class="qty-unit" id="qtyUnitLabel">u.</span>
+        <button type="button" class="qty-big" id="qtyPlus">+</button>
+      </div>
+      <div class="qty-chips" id="qtyChips" hidden>
+        <button type="button" data-g="100">100 g</button>
+        <button type="button" data-g="250">250 g</button>
+        <button type="button" data-g="500">500 g</button>
+        <button type="button" data-g="1000">1 kg</button>
+      </div>
+      <div class="qty-subtotal">Subtotal <strong id="qtySubtotal">$0</strong></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="qtyCancel">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="qtyAdd">Agregar</button>
+      </div>
     </div>
   </div>
 
@@ -172,9 +213,9 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
   <!-- Base de datos en la nube (Supabase) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=5"></script>
-  <script src="js/db.js?v=5"></script>
-  <script src="js/api.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/config.js?v=9"></script>
+  <script src="js/db.js?v=9"></script>
+  <script src="js/api.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
 </body>
 </html>
