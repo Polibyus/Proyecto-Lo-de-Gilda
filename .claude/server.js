@@ -3,10 +3,11 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
-const PORT = 8090;
+// Podés elegir el puerto:  node .claude/server.js 8091   (o variable PORT)
+const PORT = Number(process.argv[2] || process.env.PORT || 8090);
 const TYPES = { '.html':'text/html', '.css':'text/css', '.js':'text/javascript', '.json':'application/json', '.svg':'image/svg+xml' };
 
-http.createServer((req, res) => {
+const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
   if (p === '/') p = '/index.html';
   const file = path.join(ROOT, p);
@@ -16,4 +17,16 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
     res.end(data);
   });
-}).listen(PORT, () => console.log('Lo de Gilda en http://localhost:' + PORT));
+});
+
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.error(`\n⚠️  El puerto ${PORT} ya está en uso (quizá quedó otra ventana abierta).`);
+    console.error(`   Probá con otro puerto:  node .claude/server.js ${PORT + 1}\n`);
+  } else {
+    console.error(e);
+  }
+  process.exit(1);
+});
+
+server.listen(PORT, () => console.log('🏪 Lo de Gilda en http://localhost:' + PORT));

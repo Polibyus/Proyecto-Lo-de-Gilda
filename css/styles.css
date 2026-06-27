@@ -2,18 +2,18 @@
    Lo de Gilda — estilos (mobile-first)
    ============================================================ */
 :root{
-  --bg:#f6f1ea;
+  --bg:#eef4f9;            /* celeste muy suave */
   --card:#ffffff;
-  --ink:#2b2118;
-  --muted:#8a7d6e;
-  --line:#e7ddd0;
-  --brand:#7c3f1d;
-  --brand-2:#a8572a;
+  --ink:#1e2a36;
+  --muted:#6b7c8c;
+  --line:#d8e4ee;
+  --brand:#3a86c8;         /* celeste argentino */
+  --brand-2:#5fa3da;
   --accent:#1f8a4c;
   --accent-d:#176b3a;
   --warn:#c0392b;
   --low:#d98300;
-  --shadow:0 2px 8px rgba(70,45,20,.08);
+  --shadow:0 2px 8px rgba(30,60,90,.09);
   --radius:14px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -70,9 +70,14 @@ body{
 #scanInput:focus{outline:none; border-color:var(--brand-2)}
 .scan-actions{margin-top:10px}
 #cameraBtn{width:100%}
-.camera-wrap{margin-top:12px; background:#000; border-radius:12px; overflow:hidden; padding:10px}
-#reader{border-radius:8px; overflow:hidden}
-.camera-wrap .btn{width:100%; margin-top:10px}
+.camera-overlay{
+  position:fixed; inset:0; z-index:55; background:rgba(20,32,44,.93);
+  display:flex; align-items:center; justify-content:center; padding:18px;
+}
+.camera-panel{width:100%; max-width:440px}
+.camera-title{color:#fff; text-align:center; margin:0 0 12px; font-weight:600}
+#reader{border-radius:12px; overflow:hidden; background:#000}
+.camera-panel .btn{width:100%; margin-top:14px}
 
 .search-results{margin-top:12px; display:flex; flex-direction:column; gap:8px}
 .result-row{

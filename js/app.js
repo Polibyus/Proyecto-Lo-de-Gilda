@@ -48,6 +48,20 @@
     await handleScan(value);
   });
 
+  // Autocompletado en vivo: mientras escribís un nombre, mostrá coincidencias.
+  // (Si parece un código de barras, no sugiere: se está escaneando.)
+  let suggestTimer = null;
+  $('#scanInput').addEventListener('input', () => {
+    clearTimeout(suggestTimer);
+    const value = $('#scanInput').value.trim();
+    if (!value || API.looksLikeBarcode(value)) { $('#searchResults').innerHTML = ''; return; }
+    suggestTimer = setTimeout(async () => {
+      // evitá pisar resultados si el texto cambió mientras tanto
+      if ($('#scanInput').value.trim() !== value) return;
+      renderSearchResults(await DB.searchProducts(value));
+    }, 120);
+  });
+
   async function handleScan(value) {
     $('#searchResults').innerHTML = '';
     // 1) ¿existe ya un producto con ese código?
@@ -240,6 +254,40 @@
 
   $('#stockSearch').addEventListener('input', () => renderStock());
 
+  // Lector USB (PC): si se escanea un código de barras y se confirma con Enter,
+  // abre la ficha del producto para cargar/editar stock.
+  $('#stockSearch').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const v = $('#stockSearch').value.trim();
+    if (API.looksLikeBarcode(v)) { $('#stockSearch').value = ''; handleStockScan(v); }
+  });
+
+  // Escaneo en Stock: existe -> editar; no existe -> buscar online y dar de alta.
+  async function handleStockScan(value) {
+    const code = String(value).trim();
+    if (!code) return;
+    const prod = await DB.getProduct(code);
+    if (prod) {
+      openProductModal({ ...prod, editing: true, hint: 'Ya está cargado. Ajustá stock o precio.' });
+      return;
+    }
+    let found = null;
+    if (API.looksLikeBarcode(code)) {
+      toast('Buscando código…');
+      found = await API.lookupBarcode(code);
+    }
+    openProductModal({
+      code,
+      name: found ? found.name : '',
+      brand: found ? found.brand : '',
+      image: found ? found.image : '',
+      hint: found
+        ? `Encontrado en ${found.source}. Poné precio y stock.`
+        : 'Producto nuevo. Cargá los datos.',
+    });
+  }
+
   async function renderStock() {
     const q = $('#stockSearch').value;
     const list = await DB.searchProducts(q);
@@ -332,28 +380,39 @@
   function setupCamera() {
     if (typeof Html5Qrcode === 'undefined') return; // sin internet/CDN: se queda con lector USB/teclado
     $('#cameraBtn').hidden = false;
+    $('#stockScanBtn').hidden = false;
 
-    $('#cameraBtn').addEventListener('click', async () => {
-      $('#cameraWrap').hidden = false;
-      $('#cameraBtn').hidden = true;
-      try {
-        cameraScanner = new Html5Qrcode('reader');
-        await cameraScanner.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 250, height: 150 } },
-          async (decodedText) => {
-            await stopCamera();
-            await handleScan(decodedText.trim());
-          },
-          () => {}
-        );
-      } catch (err) {
-        toast('No se pudo abrir la cámara', 'err');
-        await stopCamera();
-      }
-    });
+    // Vender: el código escaneado va al carrito
+    $('#cameraBtn').addEventListener('click', () =>
+      startCamera('Escaneá para vender', handleScan));
+    // Stock: el código escaneado abre la ficha (editar o alta)
+    $('#stockScanBtn').addEventListener('click', () =>
+      startCamera('Escaneá para cargar/editar stock', handleStockScan));
 
     $('#cameraCloseBtn').addEventListener('click', stopCamera);
+    $('#cameraOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'cameraOverlay') stopCamera();
+    });
+  }
+
+  async function startCamera(title, onDecode) {
+    $('#cameraTitle').textContent = title;
+    $('#cameraOverlay').hidden = false;
+    try {
+      cameraScanner = new Html5Qrcode('reader');
+      await cameraScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        async (decodedText) => {
+          await stopCamera();
+          await onDecode(decodedText.trim());
+        },
+        () => {}
+      );
+    } catch (err) {
+      toast('No se pudo abrir la cámara', 'err');
+      await stopCamera();
+    }
   }
 
   async function stopCamera() {
@@ -361,8 +420,7 @@
       try { await cameraScanner.stop(); cameraScanner.clear(); } catch (e) {}
       cameraScanner = null;
     }
-    $('#cameraWrap').hidden = true;
-    $('#cameraBtn').hidden = false;
+    $('#cameraOverlay').hidden = true;
   }
 
   // ---------- util ----------

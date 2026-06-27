@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#7c3f1d">
+  <meta name="theme-color" content="#3a86c8">
   <title>Lo de Gilda — Almacén</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏪</text></svg>">
@@ -24,10 +24,6 @@
       </form>
       <div class="scan-actions">
         <button class="btn btn-ghost" id="cameraBtn" hidden>📷 Escanear con cámara</button>
-      </div>
-      <div id="cameraWrap" class="camera-wrap" hidden>
-        <div id="reader"></div>
-        <button class="btn btn-ghost" id="cameraCloseBtn">Cerrar cámara</button>
       </div>
       <div id="searchResults" class="search-results"></div>
     </section>
@@ -53,7 +49,8 @@
   <!-- ===================== STOCK ===================== -->
   <main id="view-stock" class="view">
     <section class="stock-head">
-      <input id="stockSearch" type="text" placeholder="Buscar producto…" aria-label="Buscar en stock">
+      <input id="stockSearch" type="text" placeholder="Buscar o escanear código…" aria-label="Buscar en stock">
+      <button class="btn btn-ghost" id="stockScanBtn" hidden title="Escanear con cámara">📷</button>
       <button class="btn btn-primary" id="newProductBtn">+ Nuevo</button>
     </section>
     <div id="stockAlerts" class="alerts"></div>
@@ -90,6 +87,15 @@
     <button class="tab" data-view="stock">📦<span>Stock</span></button>
     <button class="tab" data-view="dia">📊<span>Día</span></button>
   </nav>
+
+  <!-- ===================== CÁMARA (compartida) ===================== -->
+  <div id="cameraOverlay" class="camera-overlay" hidden>
+    <div class="camera-panel">
+      <p class="camera-title" id="cameraTitle">Apuntá al código de barras</p>
+      <div id="reader"></div>
+      <button class="btn btn-ghost" id="cameraCloseBtn">Cerrar cámara</button>
+    </div>
+  </div>
 
   <!-- ===================== MODAL PRODUCTO ===================== -->
   <div id="modal" class="modal" hidden>

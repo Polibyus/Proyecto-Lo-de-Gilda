@@ -5,7 +5,8 @@
       "name": "lo-de-gilda",
       "runtimeExecutable": "node",
       "runtimeArgs": [".claude/server.js"],
-      "port": 8090
+      "port": 8090,
+      "autoPort": true
     }
   ]
 }
